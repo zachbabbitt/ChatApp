@@ -111,6 +111,13 @@ public class ChatPage extends AppCompatActivity {
 
     });
 
+        
+
+
+
+
+
+
 
     }
 }
