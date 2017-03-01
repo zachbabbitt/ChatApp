@@ -1,8 +1,17 @@
 package com.example.zach.chatapppubnub.UserToUserConversation;
 
+import android.app.Activity;
 import android.content.Context;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Adapter;
+import android.widget.ArrayAdapter;
+import android.widget.RelativeLayout;
+import android.widget.SimpleCursorAdapter;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.zach.chatapppubnub.KeyFile;
@@ -17,9 +26,13 @@ import com.pubnub.api.models.consumer.PNStatus;
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult;
 import com.pubnub.api.models.consumer.pubsub.PNPresenceEventResult;
 
+import java.util.Random;
+
 public class ChatPage extends AppCompatActivity {
 
-    private Context mContext;
+    private Context mContext; //Context of this activity
+    private ConversationAdapter mAdapter; //Adapter for the conversation list view
+    private static int mUserID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,6 +40,19 @@ public class ChatPage extends AppCompatActivity {
         setContentView(R.layout.activity_chat_page);
 
         mContext = this;
+
+
+        //Generates random number as userID.
+        //Temporary until Firebase integration is added
+        //Could have duplicates, needed for prototyping
+        //TODO: make userID not Random
+        //TODO: Store userID in device storage
+        Random rand = new Random();
+        mUserID = rand.nextInt();
+
+
+        InitializeConversationListView();
+
 
         PNConfiguration pnConfiguration = new PNConfiguration();
         pnConfiguration.setSubscribeKey(KeyFile.subscribehKey);
@@ -111,13 +137,90 @@ public class ChatPage extends AppCompatActivity {
 
     });
 
-        
+
+    }
+
+    /**
+     * Instantiates the Conversation List View in the activity_chat_page.xml file
+     */
+    private void InitializeConversationListView(){
+        mAdapter = new ConversationAdapter(mContext, R.layout.single_message_from_user_layout, null);
+
+    }
+
+    private class Messages{
+        private String text;
+        private String time;
+        private int userID;
+        public Messages(String text, String time, int userID){
+            this.text = text;
+            this.time = time;
+            this.userID = userID;
+        }
+
+    }
 
 
+    /**
+     * Adapter to populate the conversation listview located in activity_chat_page.xml
+     * Needed since we want to use two different layout formats for user and partner messages
+     * Formats changed by setting the X scale to -1 if partner message
+     * X scale is 1 if user message.
+     *
+     * Pubnub and Firebase store messages to the Messages array, PubNub is the tool for instant
+     * communication, Firebase is to persist the messages so they can be seen across app boot ups
+     *
+     * At scale, would be cheaper to have a first party solution, I don't feel like coding that for this
+     *
+     */
+    private class ConversationAdapter extends ArrayAdapter<Messages> {
+
+        private Context mContext;
+        private int layoutID;
+        private Messages[] messages;
+        private ConversationAdapter(Context mContext, int layoutID, Messages[] messages){
+            super(mContext, layoutID);
+            this.mContext = mContext;
+            this.layoutID = layoutID;
+            this.messages = messages;
+        }
+
+        /**
+         *  Builds the view to contain the message and timestamp
+         * @param position index of the array
+         * @param convertView
+         * @param parent
+         * @return the inflated view to be added to the ListView
+         */
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent){
+
+            if(convertView == null){
+                LayoutInflater inflater = ((Activity) mContext).getLayoutInflater();
+                convertView = inflater.inflate(layoutID, parent, false);
+            }
+
+            //Grab current message
+            Messages currMessage = messages[position];
+
+            //Set text from current message to the single_message_from_user_layout file
+            TextView messageView = (TextView) findViewById(R.id.message);
+            TextView timeView = (TextView) findViewById(R.id.messageTimeStamp);
+
+            messageView.setText(currMessage.text);
+            timeView.setText(currMessage.time);
 
 
+            //Flip side of screen if from user or from partner
+            if(currMessage.userID != mUserID){
+                RelativeLayout rl = (RelativeLayout) findViewById(R.id.RLToFlip);
+                rl.setScaleX(-1);
+            }
+            return convertView;
 
+        }
 
 
     }
+
 }

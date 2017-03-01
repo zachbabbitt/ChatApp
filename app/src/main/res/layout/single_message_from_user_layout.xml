@@ -3,34 +3,38 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:orientation="horizontal" android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:weightSum="1">
+    android:weightSum="1"
+    android:scaleX="1">
 
     <RelativeLayout
+        android:id="@+id/RLToFlip"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@android:color/holo_green_dark"
         android:layout_marginStart="168dp"
         android:layout_alignParentTop="true"
-        android:layout_alignParentStart="true">
+        android:layout_alignParentStart="true"
+        android:scaleX="1"
+        >
 
         <TextView
             android:text="00:00"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/textView6"
-            android:layout_below="@+id/textView"
+            android:id="@+id/messageTimeStamp"
+            android:layout_below="@+id/message"
             android:layout_alignParentEnd="true" />
 
         <TextView
             android:text="Unfilled User Message"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/textView"
+            android:id="@+id/message"
             android:paddingLeft="0dp"
             android:paddingRight="15dp"
             android:paddingTop="15dp"
             android:layout_alignParentTop="true"
-            android:layout_toStartOf="@+id/textView6" />
+            android:layout_toStartOf="@+id/messageTimeStamp" />
     </RelativeLayout>
 
 </RelativeLayout>
