@@ -3,19 +3,19 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:orientation="horizontal" android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/RLToFlip"
     android:weightSum="1"
     android:scaleX="1">
 
     <RelativeLayout
-        android:id="@+id/RLToFlip"
+        android:id="@+id/backgroundColor"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@android:color/holo_green_dark"
         android:layout_marginStart="168dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"
-        android:scaleX="1"
-        >
+        android:scaleX="1">
 
         <TextView
             android:text="00:00"

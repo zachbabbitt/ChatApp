@@ -2,6 +2,7 @@ package com.example.zach.chatapppubnub.UserToUserConversation;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Color;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -9,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Adapter;
 import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
@@ -26,6 +28,7 @@ import com.pubnub.api.models.consumer.PNStatus;
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult;
 import com.pubnub.api.models.consumer.pubsub.PNPresenceEventResult;
 
+import java.util.List;
 import java.util.Random;
 
 public class ChatPage extends AppCompatActivity {
@@ -144,7 +147,20 @@ public class ChatPage extends AppCompatActivity {
      * Instantiates the Conversation List View in the activity_chat_page.xml file
      */
     private void InitializeConversationListView(){
-        mAdapter = new ConversationAdapter(mContext, R.layout.single_message_from_user_layout, null);
+        Messages[] messages = new Messages[3];
+        messages[0] = new Messages("Message Text 0", "time Text",mUserID);
+        messages[1] = new Messages("Message Text 1", "time Text",5);
+        messages[2] = new Messages("Message Text 2", "time Text",1);
+
+        mAdapter = new ConversationAdapter(mContext, R.layout.single_message_from_user_layout, messages);
+
+
+
+        ListView lv = (ListView) findViewById(R.id.conversation_list_view);
+        lv.setAdapter(mAdapter);
+        mAdapter.notifyDataSetChanged();
+        mAdapter.addAll(messages);
+        int count = mAdapter.getCount();
 
     }
 
@@ -204,8 +220,8 @@ public class ChatPage extends AppCompatActivity {
             Messages currMessage = messages[position];
 
             //Set text from current message to the single_message_from_user_layout file
-            TextView messageView = (TextView) findViewById(R.id.message);
-            TextView timeView = (TextView) findViewById(R.id.messageTimeStamp);
+            TextView messageView = (TextView) convertView.findViewById(R.id.message);
+            TextView timeView = (TextView) convertView.findViewById(R.id.messageTimeStamp);
 
             messageView.setText(currMessage.text);
             timeView.setText(currMessage.time);
@@ -213,8 +229,15 @@ public class ChatPage extends AppCompatActivity {
 
             //Flip side of screen if from user or from partner
             if(currMessage.userID != mUserID){
-                RelativeLayout rl = (RelativeLayout) findViewById(R.id.RLToFlip);
+                RelativeLayout rl = (RelativeLayout) convertView.findViewById(R.id.RLToFlip);
+                RelativeLayout backgroundColor = (RelativeLayout) convertView.findViewById(R.id.backgroundColor);
                 rl.setScaleX(-1);
+                messageView.setScaleX(-1);
+                timeView.setScaleX(-1);
+
+                backgroundColor.setBackgroundColor(Color.BLUE);
+
+
             }
             return convertView;
 
