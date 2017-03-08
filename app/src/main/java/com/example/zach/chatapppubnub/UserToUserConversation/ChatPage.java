@@ -10,6 +10,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Adapter;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.SimpleCursorAdapter;
@@ -28,6 +30,7 @@ import com.pubnub.api.models.consumer.PNStatus;
 import com.pubnub.api.models.consumer.pubsub.PNMessageResult;
 import com.pubnub.api.models.consumer.pubsub.PNPresenceEventResult;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -36,6 +39,7 @@ public class ChatPage extends AppCompatActivity {
     private Context mContext; //Context of this activity
     private ConversationAdapter mAdapter; //Adapter for the conversation list view
     private static int mUserID;
+    private PubNub pubnub;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +55,7 @@ public class ChatPage extends AppCompatActivity {
         //TODO: make userID not Random
         //TODO: Store userID in device storage
         Random rand = new Random();
-        mUserID = rand.nextInt();
+        mUserID = 0;
 
 
         InitializeConversationListView();
@@ -60,87 +64,77 @@ public class ChatPage extends AppCompatActivity {
         PNConfiguration pnConfiguration = new PNConfiguration();
         pnConfiguration.setSubscribeKey(KeyFile.subscribehKey);
         pnConfiguration.setPublishKey(KeyFile.publishKey);
+        pnConfiguration.setUuid(Integer.toString(mUserID));
+        pnConfiguration.setSecure(true);
 
-        PubNub pubnub = new PubNub(pnConfiguration);
+        pubnub = new PubNub(pnConfiguration);
+
+        Button sendButton = (Button) findViewById(R.id.sendButton);
+        final EditText messageHolderET = (EditText) findViewById(R.id.messageHolder);
+
+
+        final String time = "";
+
+
+        sendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String message = messageHolderET.getText().toString();
+                Messages mess = new Messages(message, mUserID);
+                sendMessage(mess);
+            }
+        });
+
+        PubNub pubnub= new PubNub(pnConfiguration);
+
+        pubnub.subscribe().channels(Arrays.asList("first_channel")).execute();
 
         pubnub.addListener(new SubscribeCallback() {
-
             @Override
             public void status(PubNub pubnub, PNStatus status) {
-
-                if (status.getCategory() == PNStatusCategory.PNUnexpectedDisconnectCategory) {
-                    // This event happens when radio / connectivity is lost
-                    Toast.makeText(mContext, "Error, lost internet connection. Please reconnect.", Toast.LENGTH_LONG).show();
+                if (status.getCategory() == PNStatusCategory.PNConnectedCategory){
+                    Messages data = new Messages("Sample Text", mUserID);
+                    pubnub.publish().channel("first_channel").message(data).async(new PNCallback<PNPublishResult>() {
+                        @Override
+                        public void onResponse(PNPublishResult result, PNStatus status) {
+                            System.out.println("onResponse called");
+                            Toast.makeText(mContext, result.toString(), Toast.LENGTH_LONG).show();
+                        }
+                    });
                 }
+            }
 
-                else if (status.getCategory() == PNStatusCategory.PNConnectedCategory) {
+            @Override
+            public void message(PubNub pubnub, PNMessageResult message) {
+                System.out.println("message called" + message.toString());
+            }
 
-                    // Connect event. You can do stuff like publish, and know you'll get it.
-                    // Or just use the connected event to confirm you are subscribed for
-                    // UI / internal notifications, etc
+            @Override
+            public void presence(PubNub pubnub, PNPresenceEventResult presence) {
+                System.out.println("presence called");
+            }
+        });
 
-                    if (status.getCategory() == PNStatusCategory.PNConnectedCategory){
-                        pubnub.publish().channel("awesomeChannel").message("hello!!").async(new PNCallback<PNPublishResult>() {
-                            @Override
-                            public void onResponse(PNPublishResult result, PNStatus status) {
-                                // Check whether request successfully completed or not.
-                                if (!status.isError()) {
 
-                                    // Message successfully published to specified channel.
-                                    Toast.makeText(mContext, "Message Sent!", Toast.LENGTH_SHORT).show();
-                                }
-                                // Request processing failed.
-                                else {
+    }
 
-                                    // Handle message publish error. Check 'category' property to find out possible issue
-                                    // because of which request did fail.
-                                    //
-                                    // Request can be resent using: [status retry];
-                                }
-                            }
-                        });
+    private void sendMessage(Messages message) {
+        pubnub.publish()
+                .message(message)
+                .channel("first_channel")
+                .shouldStore(true)
+                .usePOST(true)
+                .async(new PNCallback<PNPublishResult>() {
+                    @Override
+                    public void onResponse(PNPublishResult result, PNStatus status) {
+                        if (status.isError()) {
+                            // something bad happened.
+                            System.out.println("error happened while publishing: " + status.toString());
+                        } else {
+                            System.out.println("publish worked! timetoken: " + result.getTimetoken());
+                        }
                     }
-            }
-            else if (status.getCategory() == PNStatusCategory.PNReconnectedCategory) {
-
-                // Happens as part of our regular operation. This event happens when
-                // radio / connectivity is lost, then regained.
-            }
-            else if (status.getCategory() == PNStatusCategory.PNDecryptionErrorCategory) {
-
-                // Handle messsage decryption error. Probably client configured to
-                // encrypt messages and on live data feed it received plain text.
-            }
-        }
-
-        @Override
-        public void message(PubNub pubnub, PNMessageResult message) {
-            // Handle new message stored in message.message
-            if (message.getChannel() != null) {
-                // Message has been received on channel group stored in
-                // message.getChannel()
-            }
-            else {
-                // Message has been received on channel stored in
-                // message.getSubscription()
-            }
-            Toast.makeText(mContext, "recieved message: " + message.getMessage(), Toast.LENGTH_LONG);
-            /*
-                log the following items with your favorite logger
-                    - message.getMessage()
-                    - message.getSubscription()
-                    - message.getTimetoken()
-            */
-        }
-
-        @Override
-        public void presence(PubNub pubnub, PNPresenceEventResult presence) {
-
-        }
-
-    });
-
-
+                });
     }
 
     /**
@@ -148,9 +142,9 @@ public class ChatPage extends AppCompatActivity {
      */
     private void InitializeConversationListView(){
         Messages[] messages = new Messages[3];
-        messages[0] = new Messages("Message Text 0", "time Text",mUserID);
-        messages[1] = new Messages("Message Text 1", "time Text",5);
-        messages[2] = new Messages("Message Text 2", "time Text",1);
+        messages[0] = new Messages("Message Text 0", mUserID);
+        messages[1] = new Messages("Message Text 1",5);
+        messages[2] = new Messages("Message Text 2",1);
 
         mAdapter = new ConversationAdapter(mContext, R.layout.single_message_from_user_layout, messages);
 
@@ -160,20 +154,20 @@ public class ChatPage extends AppCompatActivity {
         lv.setAdapter(mAdapter);
         mAdapter.notifyDataSetChanged();
         mAdapter.addAll(messages);
-        int count = mAdapter.getCount();
-
     }
 
+    //Storage for individual messages
     private class Messages{
         private String text;
-        private String time;
         private int userID;
-        public Messages(String text, String time, int userID){
+        public Messages(String text, int userID){
             this.text = text;
-            this.time = time;
             this.userID = userID;
         }
-
+        @Override
+        public String toString(){
+            return text + "," + userID;
+        }
     }
 
 
@@ -224,7 +218,7 @@ public class ChatPage extends AppCompatActivity {
             TextView timeView = (TextView) convertView.findViewById(R.id.messageTimeStamp);
 
             messageView.setText(currMessage.text);
-            timeView.setText(currMessage.time);
+//            timeView.setText(currMessage.time);
 
 
             //Flip side of screen if from user or from partner
@@ -235,15 +229,12 @@ public class ChatPage extends AppCompatActivity {
                 messageView.setScaleX(-1);
                 timeView.setScaleX(-1);
 
-                backgroundColor.setBackgroundColor(Color.BLUE);
+                backgroundColor.setBackgroundColor(Color.YELLOW);
 
 
             }
             return convertView;
 
         }
-
-
     }
-
 }

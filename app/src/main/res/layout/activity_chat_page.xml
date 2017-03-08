@@ -62,7 +62,7 @@
                 android:layout_height="match_parent"
                 android:inputType="textMultiLine"
                 android:ems="10"
-                android:id="@+id/editText2"
+                android:id="@+id/messageHolder"
                 android:layout_weight="1"
                 android:hint="@string/send_message" />
 
